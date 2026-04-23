@@ -1,7 +1,5 @@
 import cv2
 import numpy as np
-from collections import Counter
-import heapq
 
 img = cv2.imread(r"D:\3-2\Digital Image Processing\LAB\lab7\img.png", 0) 
 data = np.array(img)
@@ -53,24 +51,71 @@ def lzw_decode(compressed):
 
     return result
 
-def huffman_encode(data):
-    freq = Counter(data)
+def heappush(heap, item):
+    heap.append(item)
+    i = len(heap) - 1
 
-    heap = [[weight, [symbol, ""]] for symbol, weight in freq.items()]
-    heapq.heapify(heap)
+    while i > 0:
+        parent = (i - 1) // 2
+        if heap[parent][0] > heap[i][0]:
+            heap[parent], heap[i] = heap[i], heap[parent]
+            i = parent
+        else:
+            break
+
+
+def heappop(heap):
+    heap[0], heap[-1] = heap[-1], heap[0]
+    item = heap.pop()
+
+    i = 0
+    n = len(heap)
+
+    while True:
+        left = 2 * i + 1
+        right = 2 * i + 2
+        smallest = i
+
+        if left < n and heap[left][0] < heap[smallest][0]:
+            smallest = left
+
+        if right < n and heap[right][0] < heap[smallest][0]:
+            smallest = right
+
+        if smallest != i:
+            heap[i], heap[smallest] = heap[smallest], heap[i]
+            i = smallest
+        else:
+            break
+
+    return item
+
+def huffman_encode(data):
+    freq = {}
+
+    for item in data:
+        if item in freq:
+            freq[item] += 1
+        else:
+            freq[item] = 1
+
+    heap = []
+
+    for symbol, weight in freq.items():
+        heappush(heap, [weight, [symbol, ""]])
 
     while len(heap) > 1:
-        lo = heapq.heappop(heap)
-        hi = heapq.heappop(heap)
+        lo = heappop(heap)
+        hi = heappop(heap)
 
         for pair in lo[1:]:
             pair[1] = '0' + pair[1]
         for pair in hi[1:]:
             pair[1] = '1' + pair[1]
 
-        heapq.heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+        heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
 
-    huff_dict = dict(heapq.heappop(heap)[1:])
+    huff_dict = dict(heappop(heap)[1:])
     encoded = ''.join(huff_dict[i] for i in data)
 
     return encoded, huff_dict
@@ -91,11 +136,16 @@ def huffman_decode(encoded, huff_dict):
 
 lzw_encoded = lzw_encode(data)
 huff_encoded, huff_dict = huffman_encode(lzw_encoded)
+#print(len(huff_encoded))
+    
+with open(r"D:\3-2\Digital Image Processing\LAB\lab7\lzw_encoded.txt", "w") as f:
+    f.write(' '.join(map(str, lzw_encoded)))
+huff_dict = dict(sorted(huff_dict.items(), key=lambda item: item[1]))
 
-with open(r"D:\3-2\Digital Image Processing\LAB\lab7\encoded.txt", "w") as f:
+with open(r"D:\3-2\Digital Image Processing\LAB\lab7\huff_encoded.txt", "w") as f:
     f.write(huff_encoded)
 
-with open(r"D:\3-2\Digital Image Processing\LAB\lab7\dict.txt", "w") as f:
+with open(r"D:\3-2\Digital Image Processing\LAB\lab7\huff_dict.txt", "w") as f:
     for k, v in huff_dict.items():
         f.write(f"{k}:{v}\n")
 
@@ -104,11 +154,11 @@ with open(r"D:\3-2\Digital Image Processing\LAB\lab7\shape.txt", "w") as f:
 
 print("Compression Done!")
 
-with open(r"D:\3-2\Digital Image Processing\LAB\lab7\encoded.txt", "r") as f:
+with open(r"D:\3-2\Digital Image Processing\LAB\lab7\huff_encoded.txt", "r") as f:
     encoded_data = f.read()
 
 huff_dict_loaded = {}
-with open(r"D:\3-2\Digital Image Processing\LAB\lab7\dict.txt", "r") as f:
+with open(r"D:\3-2\Digital Image Processing\LAB\lab7\huff_dict.txt", "r") as f:
     for line in f:
         k, v = line.strip().split(":")
         huff_dict_loaded[int(k)] = v
@@ -118,7 +168,10 @@ with open(r"D:\3-2\Digital Image Processing\LAB\lab7\shape.txt", "r") as f:
 
 decoded_lzw = huffman_decode(encoded_data, huff_dict_loaded)
 original_flat = lzw_decode(decoded_lzw)
-
+with open(r"D:\3-2\Digital Image Processing\LAB\lab7\huff_decoded.txt", "w") as f:
+    f.write(' '.join(map(str, decoded_lzw)))
+with open(r"D:\3-2\Digital Image Processing\LAB\lab7\original_arr.txt", "w") as f:
+    f.write(' '.join(map(str, original_flat)))
 recovered_image = np.array(original_flat).reshape((h, w)).astype(np.uint8)
 
 cv2.imwrite(r"D:\3-2\Digital Image Processing\LAB\lab7\output.png", recovered_image)
