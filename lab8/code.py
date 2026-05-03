@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 data = np.random.rand(5000, 2)
 #print(data)
@@ -75,3 +76,30 @@ for i in range(len(test_data)):
 accuracy = correct / len(test_data)
 
 print("Accuracy:", accuracy*100, "%")
+x1, y1 = mean_0
+x2, y2 = mean_1
+
+a = x2 - x1
+b = y2 - y1
+c = (x1**2 + y1**2 - x2**2 - y2**2) / 2
+
+print("Bisector Line Equation:")
+print(f"{a}x + {b}y + {c} = 0")
+
+plt.figure()
+
+# scatter plot
+plt.scatter(test_data[:, 0], test_data[:, 1], c=true_labels, cmap='bwr', alpha=0.5)
+
+# bisector line
+x_vals = np.linspace(0, 1, 100)
+
+if b != 0:
+    y_vals = -(a * x_vals + c) / b
+    plt.plot(x_vals, y_vals, color='black', linewidth=2, label="Bisector")
+
+plt.xlabel("x1")
+plt.ylabel("x2")
+plt.title("Bisector Decision Boundary")
+plt.legend()
+plt.show()
